@@ -11,7 +11,7 @@ import React, { Component } from 'react';
 
 
 const app = new Clarifai.App({
-  apiKey: 'c33e9ae08e7c4dc48985735a185030a7'
+  apiKey: 'API Key'
  });
 
 const particleParams = {
@@ -42,25 +42,37 @@ class App extends Component {
     super();
     this.state = {
       input: '',
-      imageUrl: ''
+      imageUrl: '',
+      box: {}
     }
   }
 
+  calculateFaceLocation = (box) => {
+    const clarifyFace = box.outputs[0].data.regions[0].region_info.bounding_box;
+    const image = document.getElementById('inputImage');
+    const width = Number(image.width);
+    const height = Number(image.height);
+    console.log(width, height);
+    return {
+      leftCol: clarifyFace.left_col * width,
+      topRow: clarifyFace.top_row * height,
+      rightCol: width - clarifyFace.right_col * width,
+      bottomRow: height - clarifyFace.bottom_row * height
+    }
+  }
+
+  displayBbox = (bbox) => {
+    this.setState({box: bbox})
+  }
   onInputChange = (event) => {
     this.setState({input: event.target.value})
   }
 
   onDetectButton = () => {
     this.setState({imageUrl: this.state.input})
-    app.models.predict('d02b4508df58432fbb84e800597b8959', this.state.input).then(
-      function(response) {
-        // Do somth with response
-        console.log(response.outputs[0].data.regions[0].region_info.bounding_box)
-      },
-      function(err) {
-        // There was an error
-      }
-    );
+    app.models.predict('d02b4508df58432fbb84e800597b8959', this.state.input)
+      .then(response => this.displayBbox(this.calculateFaceLocation(response)))
+      .catch(err => console.log(err));
   }
 
   render () {
@@ -77,7 +89,7 @@ class App extends Component {
           onInputChange={this.onInputChange}
           onDetectButton={this.onDetectButton}
         />
-        <FaceRecognition imageUrl = {this.state.imageUrl}/>
+        <FaceRecognition box={this.state.box} imageUrl = {this.state.imageUrl}/>
 
       </div>
     );
